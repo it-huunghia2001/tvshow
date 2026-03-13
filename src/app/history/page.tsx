@@ -3,17 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { deleteWorkLog } from "../action/actions";
 import { redirect } from "next/navigation";
-import dayjs from "@/lib/dayjs"; // Bản config Dayjs Việt Nam của Nghĩa
+import dayjs from "@/lib/dayjs";
 
 export default async function HistoryPage() {
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
-  // 1. Lấy mốc thời gian đầu tháng hiện tại theo giờ VN
   const nowVN = dayjs().tz();
   const startOfMonth = nowVN.startOf("month").toDate();
 
-  // 2. Lấy toàn bộ lịch sử trong tháng (Đã kết thúc ca làm)
   const logs = await prisma.workLog.findMany({
     where: {
       userId: user.id,
@@ -24,7 +22,15 @@ export default async function HistoryPage() {
     orderBy: { startTime: "desc" },
   });
 
-  // 3. Thống kê theo từng dự án (Stats by Job)
+  // Hàm helper chuyển đổi số giờ (decimal) sang chuỗi "Xh Ym"
+  const formatDuration = (decimalHours: number) => {
+    const hours = Math.floor(decimalHours);
+    const minutes = Math.round((decimalHours - hours) * 60);
+    if (hours === 0) return `${minutes}m`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes}m`;
+  };
+
   const statsByJob = logs.reduce((acc: any, log) => {
     const jobName = log.job.name;
     if (!acc[jobName]) {
@@ -39,7 +45,6 @@ export default async function HistoryPage() {
 
   return (
     <main className="p-5 max-w-lg mx-auto pt-8 pb-24">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-black italic uppercase tracking-tighter">
           Báo cáo tháng {nowVN.format("M")}
@@ -49,7 +54,6 @@ export default async function HistoryPage() {
         </p>
       </div>
 
-      {/* TỔNG QUAN THEO DỰ ÁN (Dạng Card Ngang) */}
       <div className="space-y-3 mb-10">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">
           Tổng quan dự án
@@ -57,12 +61,12 @@ export default async function HistoryPage() {
         {Object.entries(statsByJob).map(([name, data]: any) => (
           <div
             key={name}
-            className="bg-slate-900 p-5 rounded-[2rem] text-white shadow-xl shadow-slate-200 flex justify-between items-center"
+            className="bg-slate-900 p-5 rounded-[2rem] text-white shadow-xl flex justify-between items-center"
           >
             <div>
               <h3 className="font-bold text-sm text-blue-400 italic">{name}</h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                {data.count} ca • {data.hours.toFixed(1)} giờ
+                {data.count} ca • {formatDuration(data.hours)}
               </p>
             </div>
             <p className="text-lg font-black italic">
@@ -72,21 +76,15 @@ export default async function HistoryPage() {
         ))}
       </div>
 
-      {/* DANH SÁCH CHI TIẾT NHẬT KÝ */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center pl-2">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Nhật ký chi tiết
-          </p>
-          <span className="text-[9px] font-bold text-slate-300">
-            MỚI NHẤT TRÊN CÙNG
-          </span>
-        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">
+          Nhật ký chi tiết
+        </p>
 
         {logs.map((log) => (
           <div
             key={log.id}
-            className="group bg-white p-5 rounded-[2rem] border border-slate-100 hover:border-blue-200 transition-all shadow-sm active:scale-[0.98]"
+            className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm transition-all active:scale-[0.98]"
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-2">
@@ -97,17 +95,13 @@ export default async function HistoryPage() {
                   {log.job.name}
                 </h4>
               </div>
-
               <form
                 action={async () => {
                   "use server";
                   await deleteWorkLog(log.id);
                 }}
               >
-                <button
-                  className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
-                  title="Xoá bản ghi"
-                >
+                <button className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 rounded-full transition-all">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="14"
@@ -129,14 +123,17 @@ export default async function HistoryPage() {
 
             <div className="flex justify-between items-end bg-slate-50 p-3 rounded-2xl">
               <div className="text-[11px] font-bold text-slate-500">
-                <span className="text-slate-400 font-medium">GIỜ:</span>{" "}
+                <span className="text-slate-400 font-medium uppercase">
+                  Giờ:
+                </span>{" "}
                 {dayjs(log.startTime).tz().format("HH:mm")}
                 <span className="mx-2 text-slate-300">→</span>
                 {dayjs(log.endTime).tz().format("HH:mm")}
               </div>
               <div className="text-right">
-                <p className="text-xs font-black text-blue-600">
-                  +{log.totalHours?.toFixed(1)}H
+                <p className="text-xs font-black text-blue-600 uppercase">
+                  {/* Hiển thị định dạng Xh Ym */}+
+                  {formatDuration(log.totalHours || 0)}
                 </p>
                 <p className="text-[9px] font-bold text-slate-400 italic">
                   +
@@ -151,10 +148,8 @@ export default async function HistoryPage() {
         ))}
       </div>
 
-      {/* Trạng thái trống */}
       {logs.length === 0 && (
         <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-          <div className="text-4xl mb-4">📅</div>
           <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">
             Chưa có dữ liệu trong tháng {nowVN.format("M")}
           </p>
