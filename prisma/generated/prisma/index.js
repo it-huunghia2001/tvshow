@@ -139,10 +139,6 @@ const config = {
         "fromEnvVar": null,
         "value": "windows",
         "native": true
-      },
-      {
-        "fromEnvVar": null,
-        "value": "windows"
       }
     ],
     "previewFeatures": [],
@@ -160,6 +156,7 @@ const config = {
     "db"
   ],
   "activeProvider": "mysql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -168,8 +165,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"./generated/prisma\"\n  // Ép Prisma tải đúng engine cho Windows ở đây\n  binaryTargets = [\"native\", \"windows\"]\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel settings {\n  id            Int      @id @default(autoincrement())\n  branch_id     String   @unique\n  customer_name String   @default(\"Chào mừng quý khách\")\n  image_url     String   @default(\"https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200\")\n  updated_at    DateTime @default(now()) @updatedAt\n}\n",
-  "inlineSchemaHash": "2508212212f54baf0e9c93fe83f40b2a31d9ccd272a885492248cf243424c83f",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated/prisma\"\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel settings {\n  id            Int      @id @default(autoincrement())\n  branch_id     String   @unique\n  customer_name String   @default(\"Chào mừng quý khách\")\n  image_url     String   @default(\"https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200\")\n  updated_at    DateTime @default(now()) @updatedAt\n}\n",
+  "inlineSchemaHash": "904a0fc6841e4cc693f305fa06a2c80d9eb2f93ff422baa6919281e996b6dfc1",
   "copyEngine": true
 }
 

@@ -1,8 +1,6 @@
 generator client {
-  provider      = "prisma-client-js"
-  output        = "./generated/prisma"
-  // Ép Prisma tải đúng engine cho Windows ở đây
-  binaryTargets = ["native", "windows"]
+  provider = "prisma-client-js"
+  output   = "./generated/prisma"
 }
 
 datasource db {
