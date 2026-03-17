@@ -251,7 +251,7 @@ export default function LuxuryDisplay() {
               exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
               transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
               style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}
-              className="text-[10vw] font-[900] italic leading-none relative z-10 tracking-tighter"
+              className="text-[8vw] font-[900] italic leading-none relative z-10 tracking-tighter"
             >
               <span className="absolute inset-0 text-transparent bg-clip-text bg-linear-to-r from-transparent via-white/40 to-transparent bg-size-[200%_100%] animate-shimmer px-6">
                 {formatName(name)}
@@ -264,7 +264,7 @@ export default function LuxuryDisplay() {
             {/* Reflection with stronger blur */}
             <motion.h1
               style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}
-              className="text-[10vw] font-black italic leading-none absolute top-[80%] left-0 w-full opacity-10 scale-y-[-0.6] blur-md select-none tracking-tighter text-amber-500"
+              className="text-[8vw] font-black italic leading-none absolute top-[80%] left-0 w-full opacity-10 scale-y-[-0.6] blur-md select-none tracking-tighter text-amber-500"
             >
               {formatName(name)}
             </motion.h1>
