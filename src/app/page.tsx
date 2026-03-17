@@ -83,6 +83,17 @@ export default function LuxuryDisplay() {
     };
   }, [branchId]);
 
+  // Effect để tự động bắn pháo hoa mỗi 10 giây
+  useEffect(() => {
+    const autoConfetti = setInterval(() => {
+      // Gọi lại hàm bắn pháo hoa mà Nghĩa đã viết sẵn
+      fireConfetti();
+      console.log("Auto fire: 10s interval");
+    }, 10000); // 10000ms = 10 giây
+
+    return () => clearInterval(autoConfetti); // Dọn dẹp khi component unmount
+  }, []);
+
   if (loading) return <div className="h-screen bg-[#020202]" />;
   if (!branchId) return <BranchSelector onSelect={setBranchId} />;
 
