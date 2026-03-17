@@ -8,7 +8,5 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/User'
-export type * from './models/Job'
-export type * from './models/WorkLog'
+export type * from './models/settings'
 export type * from './commonInputTypes'

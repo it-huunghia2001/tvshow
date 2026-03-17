@@ -1,13 +1,9 @@
-import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: env("DATABASE_URL"),
-  },
-  migrations: {
-    // Đổi ở đây nè Nghĩa
-    seed: "tsx prisma/seed.ts",
+    // Đây là nơi Prisma 7 tìm URL để chạy Migrate/Generate
+    url: process.env.DATABASE_URL,
   },
 });

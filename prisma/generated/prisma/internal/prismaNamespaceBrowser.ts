@@ -51,9 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-  User: 'User',
-  Job: 'Job',
-  WorkLog: 'WorkLog'
+  settings: 'settings'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -72,37 +70,15 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const UserScalarFieldEnum = {
+export const SettingsScalarFieldEnum = {
   id: 'id',
-  username: 'username',
-  password: 'password',
-  token: 'token',
-  createdAt: 'createdAt'
+  branch_id: 'branch_id',
+  customer_name: 'customer_name',
+  image_url: 'image_url',
+  updated_at: 'updated_at'
 } as const
 
-export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
-
-
-export const JobScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  rate: 'rate',
-  createdAt: 'createdAt'
-} as const
-
-export type JobScalarFieldEnum = (typeof JobScalarFieldEnum)[keyof typeof JobScalarFieldEnum]
-
-
-export const WorkLogScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  jobId: 'jobId',
-  startTime: 'startTime',
-  endTime: 'endTime',
-  totalHours: 'totalHours'
-} as const
-
-export type WorkLogScalarFieldEnum = (typeof WorkLogScalarFieldEnum)[keyof typeof WorkLogScalarFieldEnum]
+export type SettingsScalarFieldEnum = (typeof SettingsScalarFieldEnum)[keyof typeof SettingsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -113,18 +89,11 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
-export const QueryMode = {
-  default: 'default',
-  insensitive: 'insensitive'
+export const settingsOrderByRelevanceFieldEnum = {
+  branch_id: 'branch_id',
+  customer_name: 'customer_name',
+  image_url: 'image_url'
 } as const
 
-export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+export type settingsOrderByRelevanceFieldEnum = (typeof settingsOrderByRelevanceFieldEnum)[keyof typeof settingsOrderByRelevanceFieldEnum]
 
