@@ -43,13 +43,24 @@ export default function LuxuryDisplay() {
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
 
-    // Bắt sự kiện bấm phím để Fullscreen
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Tự động vào Fullscreen khi bấm bất kỳ phím nào
       handleFullscreen();
+
+      // 2. Logic chọn chi nhánh
+      if (e.key === "1") {
+        console.log("Chọn chi nhánh: Toyota Bình Dương");
+        setBranchId("TBD");
+        localStorage.setItem("selected_branch_id", "TBD");
+      } else if (e.key === "2") {
+        console.log("Chọn chi nhánh: Toyota Mỹ Phước");
+        setBranchId("TMP");
+        localStorage.setItem("selected_branch_id", "TMP");
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("click", handleFullscreen); // Click chuột cũng được
+    window.addEventListener("click", handleFullscreen);
 
     return () => {
       clearInterval(timer);
