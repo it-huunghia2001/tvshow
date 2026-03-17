@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/prisma"
+  // Bỏ dòng output để nó dùng mặc định (giúp Vercel dễ tìm thấy thư viện hơn)
 }
 
 datasource db {
