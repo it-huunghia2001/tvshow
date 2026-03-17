@@ -33,6 +33,30 @@ export default function LuxuryDisplay() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((e) => {
+        console.error(`Lỗi không thể full màn hình: ${e.message}`);
+      });
+    }
+  };
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+
+    // Bắt sự kiện bấm phím để Fullscreen
+    const handleKeyDown = (e: KeyboardEvent) => {
+      handleFullscreen();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("click", handleFullscreen); // Click chuột cũng được
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("click", handleFullscreen);
+    };
+  }, []);
 
   const fireConfetti = () => {
     const end = Date.now() + 5 * 1000;
