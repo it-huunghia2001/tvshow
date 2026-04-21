@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -10,10 +10,22 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
+
 const branches = [
-  { id: "TBD", name: "Toyota Bình Dương" },
-  { id: "TMP", name: "Toyota Mỹ Phước" },
+  {
+    id: "TBD",
+    name: "Toyota Bình Dương",
+    label: "Binh Duong Showroom",
+    location: "Binh Duong Province",
+  },
+  {
+    id: "TMP",
+    name: "Toyota Mỹ Phước",
+    label: "My Phuoc Showroom",
+    location: "My Phuoc District",
+  },
 ];
+
 const formatName = (str: string) => {
   if (!str) return "";
   return str
@@ -33,55 +45,28 @@ export default function LuxuryDisplay() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const handleFullscreen = () => {
+
+  const handleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((e) => {
-        console.error(`Lỗi không thể full màn hình: ${e.message}`);
+        console.error(`Lỗi full màn hình: ${e.message}`);
       });
     }
-  };
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Tự động vào Fullscreen khi bấm bất kỳ phím nào
-      handleFullscreen();
-
-      // 2. Logic chọn chi nhánh
-      if (e.key === "1") {
-        console.log("Chọn chi nhánh: Toyota Bình Dương");
-        setBranchId("TBD");
-        localStorage.setItem("selected_branch_id", "TBD");
-      } else if (e.key === "2") {
-        console.log("Chọn chi nhánh: Toyota Mỹ Phước");
-        setBranchId("TMP");
-        localStorage.setItem("selected_branch_id", "TMP");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("click", handleFullscreen);
-
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("click", handleFullscreen);
-    };
   }, []);
 
-  const fireConfetti = () => {
+  const fireConfetti = useCallback(() => {
     const end = Date.now() + 5 * 1000;
-    const colors = ["#FFD700", "#FFFFFF", "#DAA520", "#B8860B"];
+    const colors = ["#F5C842", "#FFFFFF", "#FFE066", "#C9942A"];
     (function frame() {
       confetti({
-        particleCount: 3,
+        particleCount: 4,
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.6 },
         colors,
       });
       confetti({
-        particleCount: 3,
+        particleCount: 4,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.6 },
@@ -89,7 +74,27 @@ export default function LuxuryDisplay() {
       });
       if (Date.now() < end) requestAnimationFrame(frame);
     })();
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      handleFullscreen();
+      if (e.key === "1") {
+        setBranchId("TBD");
+        localStorage.setItem("selected_branch_id", "TBD");
+      }
+      if (e.key === "2") {
+        setBranchId("TMP");
+        localStorage.setItem("selected_branch_id", "TMP");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("click", handleFullscreen);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("click", handleFullscreen);
+    };
+  }, [handleFullscreen]);
 
   useEffect(() => {
     const saved = localStorage.getItem("selected_branch_id");
@@ -113,237 +118,108 @@ export default function LuxuryDisplay() {
         new Audio("/sounds/celebration.mp3").play().catch(() => {});
       })
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [branchId]);
+  }, [branchId, fireConfetti]);
 
-  // Effect để tự động bắn pháo hoa mỗi 10 giây
+  // Tự động bắn pháo hoa mỗi 10 giây
   useEffect(() => {
     const autoConfetti = setInterval(() => {
-      // Gọi lại hàm bắn pháo hoa mà Nghĩa đã viết sẵn
       fireConfetti();
-      console.log("Auto fire: 10s interval");
-    }, 10000); // 10000ms = 10 giây
+    }, 10000);
+    return () => clearInterval(autoConfetti);
+  }, [fireConfetti]);
 
-    return () => clearInterval(autoConfetti); // Dọn dẹp khi component unmount
-  }, []);
-
-  if (loading) return <div className="h-screen bg-[#020202]" />;
+  if (loading) return <div className="h-screen bg-[#060608]" />;
   if (!branchId) return <BranchSelector onSelect={setBranchId} />;
 
+  const branch = branches.find((b) => b.id === branchId);
+
   return (
-    <div className="h-screen w-full bg-[#020202] text-white flex items-center justify-center overflow-hidden font-sans relative">
-      {/* --- LAYER 1: LUXURY GEOMETRIC BACKGROUND --- */}
-      {/* Dot Grid Layer */}
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      />
-
-      {/* Subtle Scanline Effect */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none z-10" />
-
-      {/* Floating Concentric Circles */}
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-        className="absolute w-[800px] h-[800px] border border-amber-500/5 rounded-full z-10"
-      />
-      <motion.div
-        animate={{ rotate: -360 }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-        className="absolute w-[600px] h-[600px] border border-white/5 rounded-full z-10"
-      />
-
-      {/* Background Particles */}
-      <div className="absolute inset-0 z-0">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{ y: "110%", x: `${Math.random() * 100}%`, opacity: 0 }}
-            animate={{ y: "-10%", opacity: [0, 0.2, 0] }}
-            transition={{
-              duration: Math.random() * 15 + 10,
-              repeat: Infinity,
-              delay: Math.random() * 10,
-            }}
-            className="absolute w-[2px] h-[2px] bg-amber-400 rounded-full blur-[1px]"
-          />
-        ))}
-      </div>
-
-      {/* --- LAYER 2: DECORATIVE CORNERS --- */}
-      <div className="absolute top-10 left-10 w-20 h-20 border-t border-l border-amber-500/20" />
-      <div className="absolute top-10 right-10 w-20 h-20 border-t border-r border-amber-500/20" />
-      <div className="absolute bottom-10 left-10 w-20 h-20 border-b border-l border-amber-500/20" />
-      <div className="absolute bottom-10 right-10 w-20 h-20 border-b border-r border-amber-500/20" />
-
-      {/* --- LAYER 3: TOP HEADER (LOGO & CLOCK) --- */}
-      <div className="absolute top-12 w-full px-16 flex justify-between items-center z-30">
-        <motion.div
-          initial={{ x: -30, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="flex items-center gap-6"
-        >
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-amber-600 to-amber-900 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-            <div className="relative bg-black border border-white/10 p-2 rounded-xl">
-              <img
-                src="./avt.jpg"
-                className="h-16 w-auto object-contain rounded-lg"
-                alt="Toyota Logo"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-2xl font-black tracking-widest text-white/90 m-0 leading-none">
-              TOYOTA
-            </h2>
-            <p className="text-[10px] tracking-[0.5em] text-amber-500/70 uppercase mt-2">
-              Binh Duong Showroom
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ x: 30, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="flex flex-col items-end"
-        >
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-thin tracking-tighter text-white/90 tabular-nums">
-              {currentTime.toLocaleTimeString("vi-VN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-            <span className="text-xl font-light text-amber-500/80 tracking-widest uppercase">
-              {currentTime.toLocaleTimeString("vi-VN", { second: "2-digit" })}
-            </span>
-          </div>
-          <div className="text-[11px] tracking-[0.3em] uppercase opacity-40 mt-1 font-medium">
-            {currentTime.toLocaleDateString("vi-VN", {
-              weekday: "long",
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* --- LAYER 4: CENTRAL CONTENT --- */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={name}
-          className="relative z-20 flex flex-col items-center"
-        >
-          {/* Badge Decoration */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="mb-8 px-6 py-1 border border-amber-500/30 rounded-full backdrop-blur-sm"
-          >
-            <span className="text-amber-500/80 text-xs tracking-[0.6em] uppercase font-semibold">
-              Premium Experience
-            </span>
-          </motion.div>
-
-          {/* Subtitle with Animated Lines */}
-          <div className="flex items-center gap-6 mb-4">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 60 }}
-              className="h-[1px] bg-gradient-to-r from-transparent to-amber-500"
-            />
-            <span className="text-white/40 text-2xl tracking-[1em] uppercase font-extralight ml-[1em]">
-              Lễ Bàn Giao Xe
-            </span>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 60 }}
-              className="h-[1px] bg-gradient-to-l from-transparent to-amber-500"
-            />
-          </div>
-
-          <motion.h3
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            className="text-amber-200 text-lg uppercase tracking-[1em] mb-12 font-medium"
-          >
-            Chúc mừng quý khách
-          </motion.h3>
-
-          {/* THE NAME - THE MASTERPIECE */}
-          <div className="relative">
-            <motion.h1
-              initial={{ opacity: 0, y: 40, filter: "blur(15px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
-              transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-              style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}
-              className="text-[8vw] font-[900] italic leading-none relative z-10 tracking-tighter"
-            >
-              <span className="absolute inset-0 text-transparent bg-clip-text bg-linear-to-r from-transparent via-white/40 to-transparent bg-size-[200%_100%] animate-shimmer px-6">
-                {formatName(name)}
-              </span>
-              <span className="text-transparent bg-clip-text bg-linear-to-b from-white via-amber-200 to-amber-600 drop-shadow-[0_20px_80px_rgba(217,119,6,0.5)] px-8">
-                {formatName(name)}
-              </span>
-            </motion.h1>
-
-            {/* Reflection with stronger blur */}
-            <motion.h1
-              style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}
-              className="text-[8vw] font-black italic leading-none absolute top-[80%] left-0 w-full opacity-10 scale-y-[-0.6] blur-md select-none tracking-tighter text-amber-500"
-            >
-              {formatName(name)}
-            </motion.h1>
-          </div>
-
-          {/* Decorative Divider */}
-          <div className="mt-24 flex items-center gap-4">
-            <div className="w-1 h-1 bg-amber-500 rotate-45 shadow-[0_0_10px_#f59e0b]" />
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 400 }}
-              transition={{ delay: 0.8, duration: 1.5 }}
-              className="h-[1px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"
-            />
-            <div className="w-1 h-1 bg-amber-500 rotate-45 shadow-[0_0_10px_#f59e0b]" />
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* --- LAYER 5: FOOTER (BRANDING) --- */}
-      <div className="absolute bottom-12 w-full px-24 flex justify-between items-center z-30">
-        <div className="flex flex-col">
-          {/* Hiển thị tên chi nhánh dựa trên branchId */}
-          <span className="text-[10px] tracking-[0.8em] uppercase font-bold text-amber-500 mb-2">
-            {branches.find((b) => b.id === branchId)?.name || "TOYOTA VIỆT NAM"}
-          </span>
-          <p className="text-sm tracking-[0.3em] font-light opacity-50 uppercase">
-            Official Delivery Service
-          </p>
-        </div>
-
-        <div className="h-[1px] flex-grow mx-20 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-30" />
-
-        <div className="text-right opacity-50">
-          <span className="text-[10px] tracking-[0.5em] uppercase italic">
-            Luxury Experience
-          </span>
-          <p className="text-[9px] opacity-40 mt-1">
-            {branchId === "TBD" ? "Binh Duong Province" : "Ben Cat District"}
-          </p>
-        </div>
-      </div>
-
+    <>
       <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&family=Barlow:wght@100;200;300;400;500;600;700;900&display=swap");
+
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+
+        :root {
+          --gold: #f5c842;
+          --gold-dim: #c9942a;
+          --off-white: #f0ebe0;
+          --muted: rgba(240, 235, 224, 0.52);
+          --dim: rgba(240, 235, 224, 0.28);
+
+          /*
+           * Dùng vh làm đơn vị chính thay vì vw.
+           * vh tỉ lệ theo chiều cao màn hình → chữ to đúng trên TV 4K/1080p
+           * clamp(min_px, preferred_vh, max_px) đảm bảo không bao giờ quá nhỏ hoặc quá to
+           */
+          --fs-brand-name: clamp(24px, 4.2vh, 64px);
+          --fs-brand-sub: clamp(10px, 1.5vh, 22px);
+          --fs-clock: clamp(40px, 8vh, 110px);
+          --fs-clock-sec: clamp(20px, 3.5vh, 50px);
+          --fs-clock-date: clamp(11px, 1.5vh, 22px);
+          --fs-badge: clamp(11px, 1.5vh, 22px);
+          --fs-event: clamp(18px, 3.2vh, 52px);
+          --fs-congrats: clamp(13px, 2vh, 30px);
+          --fs-name: clamp(64px, 16vh, 240px); /* ← tên khách: lớn nhất */
+          --fs-footer: clamp(11px, 1.6vh, 24px);
+          --fs-footer-sub: clamp(10px, 1.3vh, 18px);
+        }
+
+        /* ── Animations ── */
+        @keyframes spin-cw {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        @keyframes spin-ccw {
+          to {
+            transform: rotate(-360deg);
+          }
+        }
+        @keyframes blink {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.15;
+          }
+        }
+        @keyframes pulse-b {
+          0%,
+          100% {
+            border-color: rgba(245, 200, 66, 0.35);
+          }
+          50% {
+            border-color: rgba(245, 200, 66, 0.9);
+          }
+        }
+        @keyframes p-rise {
+          0% {
+            transform: translateY(110vh);
+            opacity: 0;
+          }
+          8% {
+            opacity: 0.6;
+          }
+          92% {
+            opacity: 0.18;
+          }
+          100% {
+            transform: translateY(-10vh) translateX(28px);
+            opacity: 0;
+          }
+        }
         @keyframes shimmer {
           0% {
             background-position: -200% 0;
@@ -352,10 +228,563 @@ export default function LuxuryDisplay() {
             background-position: 200% 0;
           }
         }
-        .animate-shimmer {
-          animation: shimmer 6s infinite linear;
+
+        .spin-cw {
+          animation: spin-cw 22s linear infinite;
+        }
+        .spin-ccw {
+          animation: spin-ccw 15s linear infinite;
+        }
+        .blink {
+          animation: blink 2s ease-in-out infinite;
+        }
+        .pulse-b {
+          animation: pulse-b 3s ease-in-out infinite;
+        }
+
+        .particle {
+          position: absolute;
+          border-radius: 50%;
+          background: var(--gold);
+          animation: p-rise linear infinite;
+          opacity: 0;
+        }
+
+        /* Tên khách: gradient vàng-trắng độ tương phản cao */
+        .name-gradient {
+          background: linear-gradient(
+            175deg,
+            #ffffff 0%,
+            #fffbe0 20%,
+            #ffe566 40%,
+            #f5c842 60%,
+            #8a5800 100%
+          );
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        /* Shimmer overlay chạy qua tên */
+        .shimmer-name {
+          background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.25) 50%,
+            transparent 100%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 5s infinite linear;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        /* CRT scanline nhẹ */
+        .scanline {
+          background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.04) 2px,
+            rgba(0, 0, 0, 0.04) 4px
+          );
         }
       `}</style>
-    </div>
+
+      <div
+        className="fixed inset-0 overflow-hidden text-white"
+        style={{
+          backgroundColor: "#060608",
+          fontFamily: "'Barlow', sans-serif",
+        }}
+      >
+        {/* ── SVG BG ── */}
+        <div className="absolute inset-0 z-0">
+          <svg
+            className="w-full h-full"
+            viewBox="0 0 1920 1080"
+            preserveAspectRatio="xMidYMid slice"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <radialGradient id="bgG" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#F5C842" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#F5C842" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            <rect width="1920" height="1080" fill="#060608" />
+            <ellipse cx="960" cy="540" rx="720" ry="520" fill="url(#bgG)" />
+            <circle
+              cx="960"
+              cy="540"
+              r="530"
+              fill="none"
+              stroke="#F5C842"
+              strokeWidth="0.5"
+              strokeOpacity="0.07"
+            />
+            <circle
+              cx="960"
+              cy="540"
+              r="390"
+              fill="none"
+              stroke="#F5C842"
+              strokeWidth="0.4"
+              strokeOpacity="0.055"
+            />
+            <circle
+              cx="960"
+              cy="540"
+              r="250"
+              fill="none"
+              stroke="#F5C842"
+              strokeWidth="0.4"
+              strokeOpacity="0.04"
+            />
+            <line
+              x1="0"
+              y1="540"
+              x2="1920"
+              y2="540"
+              stroke="#F5C842"
+              strokeWidth="0.3"
+              strokeOpacity="0.04"
+            />
+            <line
+              x1="960"
+              y1="0"
+              x2="960"
+              y2="1080"
+              stroke="#F5C842"
+              strokeWidth="0.3"
+              strokeOpacity="0.04"
+            />
+          </svg>
+        </div>
+
+        {/* Vignette */}
+        <div
+          className="absolute inset-0 z-[2] pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 95% 80% at 50% 50%, transparent 38%, #000 100%)",
+          }}
+        />
+
+        {/* Scanline */}
+        <div className="scanline absolute inset-0 z-[3] pointer-events-none" />
+
+        {/* Particles */}
+        <div className="absolute inset-0 z-[4] pointer-events-none overflow-hidden">
+          {[...Array(20)].map((_, i) => {
+            const big = Math.random() > 0.65;
+            return (
+              <div
+                key={i}
+                className="particle"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  width: big ? "3px" : "2px",
+                  height: big ? "3px" : "2px",
+                  animationDuration: `${Math.random() * 14 + 10}s`,
+                  animationDelay: `${Math.random() * 14}s`,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Corner marks */}
+        {(
+          [
+            "top-[3vh] left-[2.5vw] border-t-2 border-l-2",
+            "top-[3vh] right-[2.5vw] border-t-2 border-r-2",
+            "bottom-[3vh] left-[2.5vw] border-b-2 border-l-2",
+            "bottom-[3vh] right-[2.5vw] border-b-2 border-r-2",
+          ] as const
+        ).map((cls, i) => (
+          <div
+            key={i}
+            className={`absolute z-[5] pointer-events-none w-[5vw] h-[5vh] border-[#C9942A]/40 ${cls}`}
+          />
+        ))}
+
+        {/* ── MAIN FLEX LAYOUT ── */}
+        <div className="relative z-10 flex flex-col h-full">
+          {/* HEADER */}
+          <header
+            className="flex items-center justify-between shrink-0"
+            style={{
+              padding: "2vh 4vw",
+              borderBottom: "1px solid rgba(245,200,66,0.13)",
+            }}
+          >
+            {/* Brand */}
+            <motion.div
+              initial={{ x: -30, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              className="flex items-center"
+              style={{ gap: "2vw" }}
+            >
+              {/* Logo ring */}
+              <div
+                className="relative shrink-0"
+                style={{
+                  width: "clamp(52px,8vh,110px)",
+                  height: "clamp(52px,8vh,110px)",
+                }}
+              >
+                <div
+                  className="spin-cw absolute rounded-full border border-[#C9942A]/55"
+                  style={{ inset: "-3px" }}
+                />
+                <div
+                  className="spin-ccw absolute rounded-full border border-[#F5C842]/20"
+                  style={{ inset: "-8px" }}
+                />
+                <div
+                  className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
+                  style={{
+                    background: "linear-gradient(135deg,#1A1500,#0A0800)",
+                    border: "1px solid rgba(245,200,66,0.35)",
+                  }}
+                >
+                  <img
+                    src="./avt.jpg"
+                    alt="Toyota"
+                    className="rounded-full object-contain"
+                    style={{ width: "80%", height: "80%" }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col" style={{ gap: "0.5vh" }}>
+                <div
+                  className="font-black tracking-[0.3em] text-white"
+                  style={{ fontSize: "var(--fs-brand-name)" }}
+                >
+                  TOYOTA
+                </div>
+                <div
+                  className="font-light tracking-[0.5em] uppercase"
+                  style={{ fontSize: "var(--fs-brand-sub)", color: "#F5C842" }}
+                >
+                  {branch?.label ?? "Vietnam Showroom"}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Clock */}
+            <motion.div
+              initial={{ x: 30, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8 }}
+              className="flex flex-col items-end"
+            >
+              <div
+                style={{
+                  fontSize: "var(--fs-clock)",
+                  fontWeight: 100,
+                  lineHeight: 1,
+                  color: "#fff",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {currentTime.toLocaleTimeString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                <span
+                  style={{
+                    fontSize: "var(--fs-clock-sec)",
+                    color: "#F5C842",
+                    marginLeft: "0.25em",
+                    fontWeight: 300,
+                  }}
+                >
+                  {currentTime.toLocaleTimeString("vi-VN", {
+                    second: "2-digit",
+                  })}
+                </span>
+              </div>
+              <div
+                className="uppercase tracking-[0.35em] font-light"
+                style={{
+                  fontSize: "var(--fs-clock-date)",
+                  color: "var(--muted)",
+                  marginTop: "0.5vh",
+                }}
+              >
+                {currentTime.toLocaleDateString("vi-VN", {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </div>
+            </motion.div>
+          </header>
+
+          {/* CENTER */}
+          <main
+            className="flex-1 flex flex-col items-center justify-center text-center"
+            style={{ padding: "1vh 4vw", gap: "1.8vh" }}
+          >
+            {/* Live badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="pulse-b inline-flex items-center rounded-full"
+              style={{
+                gap: "1.0vw",
+                padding: "0.8vh 2vw",
+                border: "1.5px solid rgba(245,200,66,.35)",
+              }}
+            >
+              <div
+                className="blink rounded-full shrink-0"
+                style={{
+                  width: "clamp(6px,1vh,12px)",
+                  height: "clamp(6px,1vh,12px)",
+                  background: "#F5C842",
+                }}
+              />
+              <span
+                className="uppercase font-semibold tracking-[0.5em]"
+                style={{ fontSize: "var(--fs-badge)", color: "#F5C842" }}
+              >
+                Premium Experience · Live
+              </span>
+            </motion.div>
+
+            {/* "Lễ Bàn Giao Xe" */}
+            <div className="flex items-center" style={{ gap: "2.5vw" }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "8vw" }}
+                transition={{ delay: 0.4, duration: 1 }}
+                style={{
+                  height: "1.5px",
+                  background: "linear-gradient(to right, transparent, #C9942A)",
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                className="font-extralight uppercase"
+                style={{
+                  fontSize: "var(--fs-event)",
+                  letterSpacing: "0.6em",
+                  color: "#F0EBE0",
+                  paddingLeft: "0.6em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Lễ Bàn Giao Xe
+              </span>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "8vw" }}
+                transition={{ delay: 0.4, duration: 1 }}
+                style={{
+                  height: "1.5px",
+                  background: "linear-gradient(to left, transparent, #C9942A)",
+                  flexShrink: 0,
+                }}
+              />
+            </div>
+
+            {/* Congrats */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="uppercase font-light tracking-[0.5em]"
+              style={{
+                fontSize: "var(--fs-congrats)",
+                color: "#F5C842",
+                paddingLeft: "0.5em",
+              }}
+            >
+              Chúc mừng quý khách
+            </motion.p>
+
+            {/* ── TÊN KHÁCH ── */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={name}
+                className="relative w-full flex flex-col items-center leading-1.5"
+                initial={{ opacity: 0, y: 50, filter: "blur(18px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 1.06, filter: "blur(22px)" }}
+                transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {/* Glow hào quang phía sau */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(245,200,66,0.18) 0%, transparent 70%)",
+                  }}
+                />
+
+                {/* Shimmer chạy qua chữ */}
+                <div
+                  aria-hidden
+                  className="shimmer-name absolute w-full text-center pointer-events-none select-none z-10 leading-5"
+                  style={{
+                    fontFamily: "'Playfair Display',serif",
+                    fontWeight: 900,
+                    fontStyle: "italic",
+                    fontSize: "var(--fs-name)",
+                    lineHeight: 1.0,
+                  }}
+                >
+                  {formatName(name)}
+                </div>
+
+                {/* Tên chính */}
+                <h1
+                  className="name-gradient relative z-[5] w-full text-center"
+                  style={{
+                    fontFamily: "'Playfair Display',serif",
+                    fontWeight: 900,
+                    fontStyle: "italic",
+                    fontSize: "var(--fs-name)",
+                    lineHeight: 1.0,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  {formatName(name)}
+                </h1>
+
+                {/* Reflection */}
+                {/* <div
+                  aria-hidden
+                  className="w-full text-center select-none pointer-events-none"
+                  style={{
+                    fontFamily: "'Playfair Display',serif",
+                    fontWeight: 900,
+                    fontStyle: "italic",
+                    fontSize: "var(--fs-name)",
+                    lineHeight: 1.0,
+                    color: "#C9942A",
+                    opacity: 0.07,
+                    transform: "scaleY(-0.42)",
+                    filter: "blur(5px)",
+                    marginTop: "-0.07em",
+                  }}
+                >
+                  {formatName(name)}
+                </div> */}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Divider dưới tên */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="flex items-center"
+              style={{ gap: "1.5vw", marginTop: "0.5vh" }}
+            >
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "14vw" }}
+                transition={{ delay: 1.1, duration: 1.4 }}
+                style={{
+                  height: "1.5px",
+                  background:
+                    "linear-gradient(to right, transparent, #F5C842, transparent)",
+                }}
+              />
+              <div
+                style={{
+                  width: "clamp(8px,1.1vw,16px)",
+                  height: "clamp(8px,1.1vw,16px)",
+                  background: "#F5C842",
+                  transform: "rotate(45deg)",
+                  flexShrink: 0,
+                  boxShadow: "0 0 16px #F5C842, 0 0 32px rgba(245,200,66,0.55)",
+                }}
+              />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "14vw" }}
+                transition={{ delay: 1.1, duration: 1.4 }}
+                style={{
+                  height: "1.5px",
+                  background:
+                    "linear-gradient(to left, transparent, #F5C842, transparent)",
+                }}
+              />
+            </motion.div>
+          </main>
+
+          {/* FOOTER */}
+          <footer
+            className="flex items-center justify-between shrink-0"
+            style={{
+              padding: "2vh 4vw",
+              borderTop: "1px solid rgba(245,200,66,0.13)",
+            }}
+          >
+            <div className="flex flex-col" style={{ gap: "0.5vh" }}>
+              <span
+                className="uppercase font-bold tracking-[0.5em]"
+                style={{ fontSize: "var(--fs-footer)", color: "#F5C842" }}
+              >
+                {branch?.name ?? "TOYOTA VIỆT NAM"}
+              </span>
+              <p
+                className="uppercase font-light tracking-[0.35em]"
+                style={{
+                  fontSize: "var(--fs-footer-sub)",
+                  color: "var(--muted)",
+                }}
+              >
+                Official Delivery Service
+              </p>
+            </div>
+
+            <div
+              className="flex-1 h-[1px]"
+              style={{
+                margin: "0 3vw",
+                background:
+                  "linear-gradient(to right, transparent, rgba(245,200,66,0.15), transparent)",
+              }}
+            />
+
+            <div className="text-right">
+              <div
+                className="uppercase italic font-light tracking-[0.5em]"
+                style={{
+                  fontSize: "var(--fs-footer-sub)",
+                  color: "var(--muted)",
+                }}
+              >
+                Luxury Experience
+              </div>
+              <div
+                className="tracking-[0.35em] font-light"
+                style={{
+                  fontSize: "var(--fs-footer-sub)",
+                  color: "var(--dim)",
+                  marginTop: "0.3vh",
+                }}
+              >
+                {branch?.location ?? "Vietnam"}
+              </div>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </>
   );
 }
