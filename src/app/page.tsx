@@ -388,7 +388,7 @@ export default function LuxuryDisplay() {
         ).map((cls, i) => (
           <div
             key={i}
-            className={`absolute z-[5] pointer-events-none w-[5vw] h-[5vh] border-[#C9942A]/40 ${cls}`}
+            className={`absolute z-5 pointer-events-none w-[5vw] h-[5vh] border-[#C9942A]/40 ${cls}`}
           />
         ))}
 
