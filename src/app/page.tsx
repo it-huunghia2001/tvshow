@@ -242,27 +242,48 @@ export default function LuxuryDisplay() {
           animation: pulse-b 3s ease-in-out infinite;
         }
 
+        /* --- CSS Tối ưu --- */
+
+        /* Thay vì lặp lại 20 hạt, chỉ dùng 8 hạt và đơn giản hóa animation */
         .particle {
           position: absolute;
           border-radius: 50%;
           background: var(--gold);
+          /* Chỉ dùng opacity và transform để GPU xử lý */
+          will-change: transform, opacity;
           animation: p-rise linear infinite;
           opacity: 0;
         }
 
-        /* Tên khách: gradient vàng-trắng độ tương phản cao */
-        .name-gradient {
+        @keyframes p-rise {
+          0% {
+            transform: translateY(105vh);
+            opacity: 0;
+          }
+          20% {
+            opacity: 0.4;
+          }
+          80% {
+            opacity: 0.1;
+          }
+          100% {
+            transform: translateY(-5vh);
+            opacity: 0;
+          }
+        }
+
+        /* Xóa bỏ hiệu ứng Shimmer trên text nếu không cần thiết vì nó gây re-paint liên tục */
+        .name-gradient-red {
           background: linear-gradient(
             175deg,
             #ffffff 0%,
-            #fffbe0 20%,
-            #ffe566 40%,
-            #f5c842 60%,
-            #8a5800 100%
+            #ff0000 50%,
+            #330000 100%
           );
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          will-change: filter; /* Tối ưu cho hiệu ứng blur khi chuyển tên */
         }
 
         /* Shimmer overlay chạy qua tên */
@@ -299,22 +320,22 @@ export default function LuxuryDisplay() {
           fontFamily: "'Barlow', sans-serif",
         }}
       >
-        {/* ── SVG BG ── */}
+        {/* --- Phần SVG BG Tối ưu --- */}
         <div className="absolute inset-0 z-0">
           <svg
             className="w-full h-full"
             viewBox="0 0 1920 1080"
             preserveAspectRatio="xMidYMid slice"
-            xmlns="http://www.w3.org/2000/svg"
           >
             <defs>
               <radialGradient id="bgG" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#F5C842" stopOpacity="0.08" />
+                <stop offset="0%" stopColor="#F5C842" stopOpacity="0.05" />
                 <stop offset="100%" stopColor="#F5C842" stopOpacity="0" />
               </radialGradient>
             </defs>
             <rect width="1920" height="1080" fill="#060608" />
             <ellipse cx="960" cy="540" rx="720" ry="520" fill="url(#bgG)" />
+            {/* Chỉ giữ lại 1 vòng tròn thay vì 3-4 cái */}
             <circle
               cx="960"
               cy="540"
@@ -322,43 +343,7 @@ export default function LuxuryDisplay() {
               fill="none"
               stroke="#F5C842"
               strokeWidth="0.5"
-              strokeOpacity="0.07"
-            />
-            <circle
-              cx="960"
-              cy="540"
-              r="390"
-              fill="none"
-              stroke="#F5C842"
-              strokeWidth="0.4"
-              strokeOpacity="0.055"
-            />
-            <circle
-              cx="960"
-              cy="540"
-              r="250"
-              fill="none"
-              stroke="#F5C842"
-              strokeWidth="0.4"
-              strokeOpacity="0.04"
-            />
-            <line
-              x1="0"
-              y1="540"
-              x2="1920"
-              y2="540"
-              stroke="#F5C842"
-              strokeWidth="0.3"
-              strokeOpacity="0.04"
-            />
-            <line
-              x1="960"
-              y1="0"
-              x2="960"
-              y2="1080"
-              stroke="#F5C842"
-              strokeWidth="0.3"
-              strokeOpacity="0.04"
+              strokeOpacity="0.05"
             />
           </svg>
         </div>
@@ -375,24 +360,21 @@ export default function LuxuryDisplay() {
         {/* Scanline */}
         <div className="scanline absolute inset-0 z-[3] pointer-events-none" />
 
-        {/* Particles */}
+        {/* --- Giảm số lượng Particles từ 20 xuống 8 --- */}
         <div className="absolute inset-0 z-[4] pointer-events-none overflow-hidden">
-          {[...Array(20)].map((_, i) => {
-            const big = Math.random() > 0.65;
-            return (
-              <div
-                key={i}
-                className="particle"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  width: big ? "3px" : "2px",
-                  height: big ? "3px" : "2px",
-                  animationDuration: `${Math.random() * 14 + 10}s`,
-                  animationDelay: `${Math.random() * 14}s`,
-                }}
-              />
-            );
-          })}
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="particle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: "2px",
+                height: "2px",
+                animationDuration: `${Math.random() * 10 + 15}s`,
+                animationDelay: `${Math.random() * 10}s`,
+              }}
+            />
+          ))}
         </div>
 
         {/* Corner marks */}
@@ -650,7 +632,7 @@ export default function LuxuryDisplay() {
 
                 {/* Tên chính */}
                 <h1
-                  className="name-gradient relative z-[5] w-full text-center"
+                  className="name-gradient relative z-[5] w-full text-center text-red-500"
                   style={{
                     fontFamily: "'Playfair Display',serif",
                     fontWeight: 900,
