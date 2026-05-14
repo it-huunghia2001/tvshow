@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  // Bỏ dòng output để nó dùng mặc định (giúp Vercel dễ tìm thấy thư viện hơn)
 }
 
 datasource db {
@@ -9,9 +8,15 @@ datasource db {
 }
 
 model settings {
-  id            Int      @id @default(autoincrement())
-  branch_id     String   @unique
-  customer_name String   @default("Chào mừng quý khách")
-  image_url     String   @default("https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200")
-  updated_at    DateTime @default(now()) @updatedAt
+  id            Int     @id @default(autoincrement())
+  branch_id     String  @unique
+  customer_name String  @default("SẴN SÀNG TRAO XE")
+  image_url     String?
+  // Tùy chỉnh giao diện
+  theme_id      String  @default("luxury-dark")
+  font_size     Int     @default(15) // Tính theo đơn vị vh
+  text_color    String  @default("#F5C842")
+  accent_color  String  @default("#FFFFFF")
+
+  updated_at DateTime @default(now()) @updatedAt
 }

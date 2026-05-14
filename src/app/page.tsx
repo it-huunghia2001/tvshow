@@ -1,6 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/purity */
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -12,94 +15,80 @@ const supabase = createClient(
 );
 
 const branches = [
-  {
-    id: "TBD",
-    name: "Toyota Bình Dương",
-    label: "Binh Duong Showroom",
-    location: "Binh Duong Province",
-  },
-  {
-    id: "TMP",
-    name: "Toyota Mỹ Phước",
-    label: "My Phuoc Showroom",
-    location: "My Phuoc District",
-  },
+  { id: "TBD", name: "Toyota Bình Dương", label: "Binh Duong Showroom" },
+  { id: "TMP", name: "Toyota Mỹ Phước", label: "My Phuoc Showroom" },
 ];
 
-const formatName = (str: string) => {
-  if (!str) return "";
-  return str
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+// secondary: màu chữ chính cho UI (Header, Footer) dựa trên nền
+const THEMES: Record<
+  string,
+  { bg: string; secondary: string; isDark: boolean }
+> = {
+  "luxury-dark": {
+    bg: "radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)",
+    secondary: "#ffffff",
+    isDark: true,
+  },
+  "toyota-red": {
+    bg: "radial-gradient(circle at center, #8b0000 0%, #2a0000 100%)",
+    secondary: "#ffffff",
+    isDark: true,
+  },
+  "pearl-white": {
+    bg: "radial-gradient(circle at center, #ffffff 0%, #d1d1d1 100%)",
+    secondary: "#1a1a1a",
+    isDark: false,
+  },
+  "silver-met": {
+    bg: "radial-gradient(circle at center, #4b4d4e 0%, #1a1c1d 100%)",
+    secondary: "#ffffff",
+    isDark: true,
+  },
+  "bronze-met": {
+    bg: "radial-gradient(circle at center, #5d4a3a 0%, #1e160e 100%)",
+    secondary: "#ffffff",
+    isDark: true,
+  },
+  "modern-blue": {
+    bg: "radial-gradient(circle at center, #001a33 0%, #000810 100%)",
+    secondary: "#ffffff",
+    isDark: true,
+  },
 };
 
 export default function LuxuryDisplay() {
   const [branchId, setBranchId] = useState<string | null>(null);
-  const [name, setName] = useState("SẴN SÀNG TRAO XE");
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const [config, setConfig] = useState({
+    name: "WELCOME",
+    themeId: "luxury-dark",
+    fontSize: 15,
+    textColor: "#F5C842",
+  });
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const handleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((e) => {
-        console.error(`Lỗi full màn hình: ${e.message}`);
+  const fireConfetti = useCallback((color: string) => {
+    const count = 200;
+    const defaults = { origin: { y: 0.7 }, zIndex: 1000 };
+    function fire(particleRatio: number, opts: any) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio),
+        colors: [color, "#ffffff", "#FFD700"],
       });
     }
-  }, []);
-
-  const fireConfetti = useCallback(() => {
-    const end = Date.now() + 5 * 1000;
-    const colors = ["#F5C842", "#FFFFFF", "#FFE066", "#C9942A"];
-    (function frame() {
-      confetti({
-        particleCount: 4,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0, y: 0.6 },
-        colors,
-      });
-      confetti({
-        particleCount: 4,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1, y: 0.6 },
-        colors,
-      });
-      if (Date.now() < end) requestAnimationFrame(frame);
-    })();
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      handleFullscreen();
-      if (e.key === "1") {
-        setBranchId("TBD");
-        localStorage.setItem("selected_branch_id", "TBD");
-      }
-      if (e.key === "2") {
-        setBranchId("TMP");
-        localStorage.setItem("selected_branch_id", "TMP");
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("click", handleFullscreen);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("click", handleFullscreen);
-    };
-  }, [handleFullscreen]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("selected_branch_id");
-    setBranchId(saved);
-    setLoading(false);
+    fire(0.25, { spread: 26, startVelocity: 55 });
+    fire(0.2, { spread: 60 });
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+    fire(0.1, { spread: 120, startVelocity: 45 });
   }, []);
 
   useEffect(() => {
@@ -107,32 +96,46 @@ export default function LuxuryDisplay() {
     fetch(`/api/settings?branch_id=${branchId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data?.customer_name) setName(data.customer_name);
+        if (data) {
+          setConfig({
+            name: data.customer_name,
+            themeId: data.theme_id || "luxury-dark",
+            fontSize: data.font_size || 15,
+            textColor: data.text_color || "#F5C842",
+          });
+        }
       });
 
     const channel = supabase
       .channel(`showroom-${branchId}`)
       .on("broadcast", { event: "car-delivery" }, (payload) => {
-        setName(payload.payload.name);
-        fireConfetti();
-        new Audio("/sounds/celebration.mp3").play().catch(() => {});
+        const p = payload.payload;
+        setConfig({
+          name: p.customer_name,
+          themeId: p.theme_id,
+          fontSize: p.font_size,
+          textColor: p.text_color,
+        });
+        fireConfetti(p.text_color || "#F5C842");
       })
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
   }, [branchId, fireConfetti]);
 
-  // Tự động bắn pháo hoa mỗi 10 giây
   useEffect(() => {
-    const autoConfetti = setInterval(() => {
-      fireConfetti();
-    }, 10000);
-    return () => clearInterval(autoConfetti);
-  }, [fireConfetti]);
+    const saved = localStorage.getItem("selected_branch_id");
+    if (saved) setBranchId(saved);
+    setLoading(false);
+  }, []);
 
-  if (loading) return <div className="h-screen bg-[#060608]" />;
+  const activeTheme = useMemo(
+    () => THEMES[config.themeId] || THEMES["luxury-dark"],
+    [config.themeId],
+  );
+
+  if (loading) return <div className="h-screen bg-black" />;
   if (!branchId) return <BranchSelector onSelect={setBranchId} />;
 
   const branch = branches.find((b) => b.id === branchId);
@@ -140,632 +143,186 @@ export default function LuxuryDisplay() {
   return (
     <>
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&family=Barlow:wght@100;200;300;400;500;600;700;900&display=swap");
-
-        *,
-        *::before,
-        *::after {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        :root {
-          --gold: #f5c842;
-          --gold-dim: #c9942a;
-          --off-white: #f0ebe0;
-          --muted: rgba(240, 235, 224, 0.52);
-          --dim: rgba(240, 235, 224, 0.28);
-
-          /*
-           * Dùng vh làm đơn vị chính thay vì vw.
-           * vh tỉ lệ theo chiều cao màn hình → chữ to đúng trên TV 4K/1080p
-           * clamp(min_px, preferred_vh, max_px) đảm bảo không bao giờ quá nhỏ hoặc quá to
-           */
-          --fs-brand-name: clamp(24px, 4.2vh, 64px);
-          --fs-brand-sub: clamp(10px, 1.5vh, 22px);
-          --fs-clock: clamp(40px, 8vh, 110px);
-          --fs-clock-sec: clamp(20px, 3.5vh, 50px);
-          --fs-clock-date: clamp(11px, 1.5vh, 22px);
-          --fs-badge: clamp(11px, 1.5vh, 22px);
-          --fs-event: clamp(18px, 3.2vh, 52px);
-          --fs-congrats: clamp(13px, 2vh, 30px);
-          --fs-name: clamp(64px, 16vh, 240px); /* ← tên khách: lớn nhất */
-          --fs-footer: clamp(11px, 1.6vh, 24px);
-          --fs-footer-sub: clamp(10px, 1.3vh, 18px);
-        }
-
-        /* ── Animations ── */
-        @keyframes spin-cw {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes spin-ccw {
-          to {
-            transform: rotate(-360deg);
-          }
-        }
-        @keyframes blink {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.15;
-          }
-        }
-        @keyframes pulse-b {
-          0%,
-          100% {
-            border-color: rgba(245, 200, 66, 0.35);
-          }
-          50% {
-            border-color: rgba(245, 200, 66, 0.9);
-          }
-        }
-        @keyframes p-rise {
-          0% {
-            transform: translateY(110vh);
-            opacity: 0;
-          }
-          8% {
-            opacity: 0.6;
-          }
-          92% {
-            opacity: 0.18;
-          }
-          100% {
-            transform: translateY(-10vh) translateX(28px);
-            opacity: 0;
-          }
-        }
-        @keyframes shimmer {
-          0% {
-            background-position: -200% 0;
-          }
-          100% {
-            background-position: 200% 0;
-          }
-        }
-
-        .spin-cw {
-          animation: spin-cw 22s linear infinite;
-        }
-        .spin-ccw {
-          animation: spin-ccw 15s linear infinite;
-        }
-        .blink {
-          animation: blink 2s ease-in-out infinite;
-        }
-        .pulse-b {
-          animation: pulse-b 3s ease-in-out infinite;
-        }
-
-        /* --- CSS Tối ưu --- */
-
-        /* Thay vì lặp lại 20 hạt, chỉ dùng 8 hạt và đơn giản hóa animation */
+        @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=Barlow:wght@100;300;400;700;900&display=swap");
         .particle {
           position: absolute;
+          background: ${config.textColor};
           border-radius: 50%;
-          background: var(--gold);
-          /* Chỉ dùng opacity và transform để GPU xử lý */
-          will-change: transform, opacity;
-          animation: p-rise linear infinite;
-          opacity: 0;
+          opacity: 0.15;
+          animation: float 20s infinite linear;
         }
-
-        @keyframes p-rise {
+        @keyframes float {
           0% {
-            transform: translateY(105vh);
+            transform: translateY(110vh) scale(0);
             opacity: 0;
           }
-          20% {
-            opacity: 0.4;
+          10% {
+            opacity: 0.3;
           }
-          80% {
-            opacity: 0.1;
+          90% {
+            opacity: 0.3;
           }
           100% {
-            transform: translateY(-5vh);
+            transform: translateY(-10vh) scale(1.5);
             opacity: 0;
           }
         }
-
-        /* Xóa bỏ hiệu ứng Shimmer trên text nếu không cần thiết vì nó gây re-paint liên tục */
-        .name-gradient-red {
-          background: linear-gradient(
-            175deg,
-            #ffffff 0%,
-            #ff0000 50%,
-            #330000 100%
-          );
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          will-change: filter; /* Tối ưu cho hiệu ứng blur khi chuyển tên */
-        }
-
-        /* Shimmer overlay chạy qua tên */
-        .shimmer-name {
-          background-image: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.25) 50%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          animation: shimmer 5s infinite linear;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        /* CRT scanline nhẹ */
-        .scanline {
-          background: repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 2px,
-            rgba(0, 0, 0, 0.04) 2px,
-            rgba(0, 0, 0, 0.04) 4px
-          );
+        .vignette {
+          box-shadow: ${activeTheme.isDark
+            ? "inset 0 0 200px rgba(0, 0, 0, 0.8)"
+            : "inset 0 0 200px rgba(0, 0, 0, 0.1)"};
         }
       `}</style>
 
       <div
-        className="fixed inset-0 overflow-hidden text-white"
+        className="fixed inset-0 flex flex-col transition-all duration-1000 overflow-hidden"
         style={{
-          backgroundColor: "#060608",
+          background: activeTheme.bg,
+          color: activeTheme.secondary,
           fontFamily: "'Barlow', sans-serif",
         }}
       >
-        {/* --- Phần SVG BG Tối ưu --- */}
-        <div className="absolute inset-0 z-0">
-          <svg
-            className="w-full h-full"
-            viewBox="0 0 1920 1080"
-            preserveAspectRatio="xMidYMid slice"
-          >
-            <defs>
-              <radialGradient id="bgG" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#F5C842" stopOpacity="0.05" />
-                <stop offset="100%" stopColor="#F5C842" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <rect width="1920" height="1080" fill="#060608" />
-            <ellipse cx="960" cy="540" rx="720" ry="520" fill="url(#bgG)" />
-            {/* Chỉ giữ lại 1 vòng tròn thay vì 3-4 cái */}
-            <circle
-              cx="960"
-              cy="540"
-              r="530"
-              fill="none"
-              stroke="#F5C842"
-              strokeWidth="0.5"
-              strokeOpacity="0.05"
-            />
-          </svg>
-        </div>
+        <div className="absolute inset-0 vignette pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
 
-        {/* Vignette */}
-        <div
-          className="absolute inset-0 z-[2] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 95% 80% at 50% 50%, transparent 38%, #000 100%)",
-          }}
-        />
-
-        {/* Scanline */}
-        <div className="scanline absolute inset-0 z-[3] pointer-events-none" />
-
-        {/* --- Giảm số lượng Particles từ 20 xuống 8 --- */}
-        <div className="absolute inset-0 z-[4] pointer-events-none overflow-hidden">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                width: "2px",
-                height: "2px",
-                animationDuration: `${Math.random() * 10 + 15}s`,
-                animationDelay: `${Math.random() * 10}s`,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Corner marks */}
-        {(
-          [
-            "top-[3vh] left-[2.5vw] border-t-2 border-l-2",
-            "top-[3vh] right-[2.5vw] border-t-2 border-r-2",
-            "bottom-[3vh] left-[2.5vw] border-b-2 border-l-2",
-            "bottom-[3vh] right-[2.5vw] border-b-2 border-r-2",
-          ] as const
-        ).map((cls, i) => (
-          <div
-            key={i}
-            className={`absolute z-5 pointer-events-none w-[5vw] h-[5vh] border-[#C9942A]/40 ${cls}`}
-          />
-        ))}
-
-        {/* ── MAIN FLEX LAYOUT ── */}
-        <div className="relative z-10 flex flex-col h-full">
-          {/* HEADER */}
-          <header
-            className="flex items-center justify-between shrink-0"
-            style={{
-              padding: "2vh 4vw",
-              borderBottom: "1px solid rgba(245,200,66,0.13)",
-            }}
-          >
-            {/* Brand */}
+        {/* HEADER */}
+        <header className="relative z-20 flex items-center justify-between p-16">
+          <div className="flex items-center gap-10">
             <motion.div
-              initial={{ x: -30, opacity: 0 }}
+              initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.8 }}
-              className="flex items-center"
-              style={{ gap: "2vw" }}
+              className="relative"
             >
-              {/* Logo ring */}
               <div
-                className="relative shrink-0"
-                style={{
-                  width: "clamp(52px,8vh,110px)",
-                  height: "clamp(52px,8vh,110px)",
-                }}
+                className={`w-24 h-24 rounded-2xl p-5 shadow-2xl flex items-center justify-center ${activeTheme.isDark ? "bg-white" : "bg-gray-100"}`}
               >
-                <div
-                  className="spin-cw absolute rounded-full border border-[#C9942A]/55"
-                  style={{ inset: "-3px" }}
+                <img
+                  src="/avt.jpg"
+                  alt="Logo"
+                  className="w-full h-full object-contain"
                 />
-                <div
-                  className="spin-ccw absolute rounded-full border border-[#F5C842]/20"
-                  style={{ inset: "-8px" }}
-                />
-                <div
-                  className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
-                  style={{
-                    background: "linear-gradient(135deg,#1A1500,#0A0800)",
-                    border: "1px solid rgba(245,200,66,0.35)",
-                  }}
-                >
-                  <img
-                    src="./avt.jpg"
-                    alt="Toyota"
-                    className="rounded-full object-contain"
-                    style={{ width: "80%", height: "80%" }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
               </div>
-
-              <div className="flex flex-col" style={{ gap: "0.5vh" }}>
-                <div
-                  className="font-black tracking-[0.3em] text-white"
-                  style={{ fontSize: "var(--fs-brand-name)" }}
-                >
-                  TOYOTA
-                </div>
-                <div
-                  className="font-light tracking-[0.5em] uppercase"
-                  style={{ fontSize: "var(--fs-brand-sub)", color: "#F5C842" }}
-                >
-                  {branch?.label ?? "Vietnam Showroom"}
-                </div>
-              </div>
+              <div
+                className={`absolute -inset-2 border rounded-2xl animate-pulse ${activeTheme.isDark ? "border-white/10" : "border-black/5"}`}
+              />
             </motion.div>
 
-            {/* Clock */}
-            <motion.div
-              initial={{ x: 30, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.8 }}
-              className="flex flex-col items-end"
-            >
-              <div
-                style={{
-                  fontSize: "var(--fs-clock)",
-                  fontWeight: 100,
-                  lineHeight: 1,
-                  color: "#fff",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {currentTime.toLocaleTimeString("vi-VN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+            <div className="space-y-1">
+              <h2 className="text-5xl font-black tracking-[0.3em] leading-none">
+                TOYOTA
+              </h2>
+              <div className="flex items-center gap-3 opacity-50">
                 <span
-                  style={{
-                    fontSize: "var(--fs-clock-sec)",
-                    color: "#F5C842",
-                    marginLeft: "0.25em",
-                    fontWeight: 300,
-                  }}
-                >
-                  {currentTime.toLocaleTimeString("vi-VN", {
-                    second: "2-digit",
-                  })}
-                </span>
-              </div>
-              <div
-                className="uppercase tracking-[0.35em] font-light"
-                style={{
-                  fontSize: "var(--fs-clock-date)",
-                  color: "var(--muted)",
-                  marginTop: "0.5vh",
-                }}
-              >
-                {currentTime.toLocaleDateString("vi-VN", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })}
-              </div>
-            </motion.div>
-          </header>
-
-          {/* CENTER */}
-          <main
-            className="flex-1 flex flex-col items-center justify-center text-center"
-            style={{ padding: "1vh 4vw", gap: "1.8vh" }}
-          >
-            {/* Live badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="pulse-b inline-flex items-center rounded-full"
-              style={{
-                gap: "1.0vw",
-                padding: "0.8vh 2vw",
-                border: "1.5px solid rgba(245,200,66,.35)",
-              }}
-            >
-              <div
-                className="blink rounded-full shrink-0"
-                style={{
-                  width: "clamp(6px,1vh,12px)",
-                  height: "clamp(6px,1vh,12px)",
-                  background: "#F5C842",
-                }}
-              />
-              <span
-                className="uppercase font-semibold tracking-[0.5em]"
-                style={{ fontSize: "var(--fs-badge)", color: "#F5C842" }}
-              >
-                Premium Experience · Live
-              </span>
-            </motion.div>
-
-            {/* "Lễ Bàn Giao Xe" */}
-            <div className="flex items-center" style={{ gap: "2.5vw" }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "8vw" }}
-                transition={{ delay: 0.4, duration: 1 }}
-                style={{
-                  height: "1.5px",
-                  background: "linear-gradient(to right, transparent, #C9942A)",
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                className="font-extralight uppercase"
-                style={{
-                  fontSize: "var(--fs-event)",
-                  letterSpacing: "0.6em",
-                  color: "#F0EBE0",
-                  paddingLeft: "0.6em",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Lễ Bàn Giao Xe
-              </span>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "8vw" }}
-                transition={{ delay: 0.4, duration: 1 }}
-                style={{
-                  height: "1.5px",
-                  background: "linear-gradient(to left, transparent, #C9942A)",
-                  flexShrink: 0,
-                }}
-              />
-            </div>
-
-            {/* Congrats */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="uppercase font-light tracking-[0.5em]"
-              style={{
-                fontSize: "var(--fs-congrats)",
-                color: "#F5C842",
-                paddingLeft: "0.5em",
-              }}
-            >
-              Chúc mừng quý khách
-            </motion.p>
-
-            {/* ── TÊN KHÁCH ── */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={name}
-                className="relative w-full flex flex-col items-center leading-1.5"
-                initial={{ opacity: 0, y: 50, filter: "blur(18px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 1.06, filter: "blur(22px)" }}
-                transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {/* Glow hào quang phía sau */}
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(245,200,66,0.18) 0%, transparent 70%)",
-                  }}
+                  className={`h-px w-8 ${activeTheme.isDark ? "bg-white" : "bg-black"}`}
                 />
+                <p className="text-sm uppercase tracking-[0.6em] font-light">
+                  {branch?.label}
+                </p>
+              </div>
+            </div>
+          </div>
 
-                {/* Shimmer chạy qua chữ */}
-                <div
-                  aria-hidden
-                  className="shimmer-name absolute w-full text-center pointer-events-none select-none z-10 leading-5"
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontWeight: 900,
-                    fontStyle: "italic",
-                    fontSize: "var(--fs-name)",
-                    lineHeight: 1.0,
-                  }}
-                >
-                  {formatName(name)}
-                </div>
+          <div className="text-right">
+            <div className="text-8xl font-black tracking-tighter opacity-90 tabular-nums">
+              {currentTime.toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+            <div className="text-sm uppercase tracking-[0.4em] opacity-40 mt-2 font-medium">
+              {new Intl.DateTimeFormat("vi-VN", { dateStyle: "full" }).format(
+                currentTime,
+              )}
+            </div>
+          </div>
+        </header>
 
-                {/* Tên chính */}
-                <h1
-                  className="name-gradient relative z-[5] w-full text-center text-red-500"
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontWeight: 900,
-                    fontStyle: "italic",
-                    fontSize: "var(--fs-name)",
-                    lineHeight: 1.0,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {formatName(name)}
-                </h1>
-
-                {/* Reflection */}
-                {/* <div
-                  aria-hidden
-                  className="w-full text-center select-none pointer-events-none"
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontWeight: 900,
-                    fontStyle: "italic",
-                    fontSize: "var(--fs-name)",
-                    lineHeight: 1.0,
-                    color: "#C9942A",
-                    opacity: 0.07,
-                    transform: "scaleY(-0.42)",
-                    filter: "blur(5px)",
-                    marginTop: "-0.07em",
-                  }}
-                >
-                  {formatName(name)}
-                </div> */}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Divider dưới tên */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="flex items-center"
-              style={{ gap: "1.5vw", marginTop: "0.5vh" }}
-            >
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "14vw" }}
-                transition={{ delay: 1.1, duration: 1.4 }}
-                style={{
-                  height: "1.5px",
-                  background:
-                    "linear-gradient(to right, transparent, #F5C842, transparent)",
-                }}
-              />
-              <div
-                style={{
-                  width: "clamp(8px,1.1vw,16px)",
-                  height: "clamp(8px,1.1vw,16px)",
-                  background: "#F5C842",
-                  transform: "rotate(45deg)",
-                  flexShrink: 0,
-                  boxShadow: "0 0 16px #F5C842, 0 0 32px rgba(245,200,66,0.55)",
-                }}
-              />
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "14vw" }}
-                transition={{ delay: 1.1, duration: 1.4 }}
-                style={{
-                  height: "1.5px",
-                  background:
-                    "linear-gradient(to left, transparent, #F5C842, transparent)",
-                }}
-              />
-            </motion.div>
-          </main>
-
-          {/* FOOTER */}
-          <footer
-            className="flex items-center justify-between shrink-0"
-            style={{
-              padding: "2vh 4vw",
-              borderTop: "1px solid rgba(245,200,66,0.13)",
-            }}
+        {/* MAIN CONTENT */}
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-10 -mt-10">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`mb-12 px-10 py-3 rounded-full border backdrop-blur-md shadow-2xl ${activeTheme.isDark ? "border-white/10 bg-black/20" : "border-black/10 bg-white/40"}`}
           >
-            <div className="flex flex-col" style={{ gap: "0.5vh" }}>
-              <span
-                className="uppercase font-bold tracking-[0.5em]"
-                style={{ fontSize: "var(--fs-footer)", color: "#F5C842" }}
-              >
-                {branch?.name ?? "TOYOTA VIỆT NAM"}
-              </span>
-              <p
-                className="uppercase font-light tracking-[0.35em]"
-                style={{
-                  fontSize: "var(--fs-footer-sub)",
-                  color: "var(--muted)",
-                }}
-              >
-                Official Delivery Service
-              </p>
-            </div>
+            <span
+              className="text-xs tracking-[1.5em] uppercase font-black"
+              style={{ color: config.textColor }}
+            >
+              Lễ Bàn Giao Xe
+            </span>
+          </motion.div>
 
+          <motion.h3
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            className="text-4xl font-thin uppercase tracking-[0.8em] mb-12"
+          >
+            Trân trọng chúc mừng
+          </motion.h3>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={config.name}
+              initial={{ y: 80, opacity: 0, filter: "blur(30px)", scale: 0.9 }}
+              animate={{ y: 0, opacity: 1, filter: "blur(0px)", scale: 1 }}
+              exit={{ y: -80, opacity: 0, filter: "blur(30px)", scale: 1.1 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              className="relative"
+            >
+              <h1
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: `${config.fontSize}vh`,
+                  color: config.textColor,
+                  textShadow: activeTheme.isDark
+                    ? `0 20px 100px ${config.textColor}44`
+                    : `0 10px 40px ${config.textColor}22`,
+                }}
+                className="italic font-black leading-[1.1] drop-shadow-2xl px-20"
+              >
+                {config.name.toUpperCase()}
+              </h1>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="mt-24 flex items-center gap-10 opacity-20">
             <div
-              className="flex-1 h-[1px]"
-              style={{
-                margin: "0 3vw",
-                background:
-                  "linear-gradient(to right, transparent, rgba(245,200,66,0.15), transparent)",
-              }}
+              className={`h-px w-48 bg-gradient-to-r from-transparent via-${activeTheme.isDark ? "white" : "black"} to-transparent`}
             />
+            <img
+              src="/avt.jpg"
+              className={`w-8 h-8 object-contain ${activeTheme.isDark ? "grayscale invert" : "grayscale"}`}
+              alt="sub-logo"
+            />
+            <div
+              className={`h-px w-48 bg-gradient-to-r from-transparent via-${activeTheme.isDark ? "white" : "black"} to-transparent`}
+            />
+          </div>
+        </main>
 
-            <div className="text-right">
-              <div
-                className="uppercase italic font-light tracking-[0.5em]"
-                style={{
-                  fontSize: "var(--fs-footer-sub)",
-                  color: "var(--muted)",
-                }}
-              >
-                Luxury Experience
-              </div>
-              <div
-                className="tracking-[0.35em] font-light"
-                style={{
-                  fontSize: "var(--fs-footer-sub)",
-                  color: "var(--dim)",
-                  marginTop: "0.3vh",
-                }}
-              >
-                {branch?.location ?? "Vietnam"}
-              </div>
+        {/* FOOTER */}
+        <footer className="p-16 flex justify-between items-end">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+              <span className="opacity-30 text-[10px] tracking-[0.3em] uppercase font-bold">
+                Official Delivery System
+              </span>
             </div>
-          </footer>
-        </div>
+            <p className="opacity-40 text-lg tracking-[0.2em] font-light">
+              © {branch?.name}
+            </p>
+          </div>
+
+          <div className="flex flex-col items-end gap-1 border-r-2 border-red-600 pr-6">
+            <span className="opacity-60 text-xs tracking-[0.5em] uppercase font-black italic">
+              Quality - Service - Care
+            </span>
+            <span className="opacity-30 text-[10px] tracking-[0.2em] uppercase">
+              The Ultimate Driving Experience
+            </span>
+          </div>
+        </footer>
       </div>
     </>
   );

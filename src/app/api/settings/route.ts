@@ -1,30 +1,30 @@
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const branchId = searchParams.get("branch_id");
+  const branch_id = searchParams.get("branch_id");
 
-  if (!branchId)
-    return NextResponse.json({ error: "Missing Branch ID" }, { status: 400 });
+  if (!branch_id)
+    return NextResponse.json({ error: "Missing branch_id" }, { status: 400 });
 
-  try {
-    let data = await prisma.settings.findUnique({
-      where: { branch_id: branchId },
-    });
+  const data = await prisma.settings.findUnique({
+    where: { branch_id },
+  });
+  return NextResponse.json(data);
+}
 
-    // Nếu chi nhánh chưa có trong DB, tạo mặc định luôn cho tiện
-    if (!data) {
-      data = await prisma.settings.create({
-        data: {
-          branch_id: branchId,
-          customer_name: "Chào mừng quý khách",
-        },
-      });
-    }
+export async function POST(request: Request) {
+  const body = await request.json();
+  const { branch_id, ...updateData } = body;
 
-    return NextResponse.json(data);
-  } catch (error) {
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
-  }
+  const updated = await prisma.settings.upsert({
+    where: { branch_id },
+    update: updateData,
+    create: { branch_id, ...updateData },
+  });
+
+  return NextResponse.json(updated);
 }
