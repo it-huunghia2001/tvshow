@@ -7,6 +7,10 @@ const branches = [
   { id: "TMP", name: "Toyota Mỹ Phước", passcode: "7979" },
 ];
 
+<style jsx global>{`
+  @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=Barlow:wght@100;300;400;700;900&display=swap");
+`}</style>;
+
 // Bảng màu nền phong phú hơn, mô phỏng các màu sơn xe thực tế
 const THEMES = [
   {
@@ -288,87 +292,136 @@ export default function AdminPage() {
           </div>
 
           {/* CỘT PHẢI: PREVIEW THÔNG MINH */}
+          {/* CỘT PHẢI: PREVIEW THÔNG MINH */}
           <div className="lg:col-span-5 space-y-6">
             <div className="sticky top-10 space-y-6">
               <div className="bg-slate-900 rounded-[2rem] border border-white/5 p-2 shadow-2xl overflow-hidden">
-                <div className="bg-black rounded-[1.5rem] aspect-[16/10] relative overflow-hidden group">
-                  {/* Background Mô phỏng TV */}
+                {/* Container mô phỏng tỉ lệ 16:9 của TV */}
+                <div className="bg-black rounded-[1.5rem] aspect-video relative overflow-hidden group shadow-inner">
+                  {/* --- BẮT ĐẦU GIAO DIỆN TV MÔ PHỎNG --- */}
                   <div
-                    className="absolute inset-0 transition-all duration-1000 flex flex-col items-center justify-center p-8"
+                    className="absolute inset-0 transition-all duration-700 flex flex-col"
                     style={{
-                      background: `radial-gradient(circle at center, ${currentTheme.secondary}, ${currentTheme.color})`,
+                      background:
+                        THEMES.find((t) => t.id === themeId)?.secondary ||
+                        "#000",
+                      backgroundImage: `radial-gradient(circle at center, ${THEMES.find((t) => t.id === themeId)?.secondary} 0%, ${THEMES.find((t) => t.id === themeId)?.color} 100%)`,
+                      color: "#fff",
+                      fontFamily: "'Barlow', sans-serif",
+                      transform: "scale(0.35)", // Scale nhỏ lại để vừa khung preview
+                      width: "285.7%", // Bù lại tỉ lệ scale (100 / 0.35)
+                      height: "285.7%",
+                      left: "-92.8%",
+                      top: "-92.8%",
                     }}
                   >
-                    {/* Hiệu ứng hạt lấp lánh (mô phỏng) */}
-                    <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
+                    {/* Lớp hạt (Particles) mô phỏng */}
+                    <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
 
-                    <div className="relative z-10 flex flex-col items-center text-center space-y-2">
-                      <div className="text-[0.5rem] uppercase tracking-[0.5em] text-white/40 border-b border-white/10 pb-1 mb-2">
-                        Lễ bàn giao xe
+                    {/* Header TV */}
+                    <header className="p-12 flex justify-between items-start">
+                      <div className="flex items-center gap-6">
+                        <div className="bg-white p-4 rounded-xl w-20 h-20 flex items-center justify-center">
+                          <img
+                            src="/avt.jpg"
+                            alt="logo"
+                            className="w-full object-contain"
+                          />
+                        </div>
+                        <div>
+                          <h2 className="text-5xl font-black tracking-[0.3em] m-0">
+                            TOYOTA
+                          </h2>
+                          <p className="text-xl tracking-[0.5em] opacity-50 uppercase m-0">
+                            {branches.find((b) => b.id === selectedBranch)
+                              ?.id === "TBD"
+                              ? "Binh Duong Showroom"
+                              : "My Phuoc Showroom"}
+                          </p>
+                        </div>
                       </div>
-                      <div
-                        className="font-black italic uppercase leading-tight transition-all duration-500"
+                      <div className="text-right">
+                        <div className="text-7xl font-black tabular-nums">
+                          14:30
+                        </div>
+                        <div className="text-lg opacity-40 tracking-widest uppercase">
+                          Thứ Năm, 14 Tháng 5, 2026
+                        </div>
+                      </div>
+                    </header>
+
+                    {/* Main TV */}
+                    <main className="flex-1 flex flex-col items-center justify-center text-center -mt-20">
+                      <div className="mb-10 px-10 py-2 rounded-full border border-white/20 bg-black/20 backdrop-blur-md">
+                        <span
+                          className="text-xl font-black uppercase tracking-[1em]"
+                          style={{ color: textColor }}
+                        >
+                          Lễ Bàn Giao Xe
+                        </span>
+                      </div>
+
+                      <h3 className="text-4xl font-thin uppercase tracking-[0.8em] mb-10 opacity-50">
+                        Trân trọng chúc mừng
+                      </h3>
+
+                      <h1
                         style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: `${fontSize}vh`,
                           color: textColor,
-                          fontSize: `${fontSize / 3.5}vh`,
-                          textShadow: `0 10px 30px ${textColor}44`,
+                          textShadow: `0 20px 80px ${textColor}44`,
                         }}
+                        className="italic font-black leading-tight uppercase px-20"
                       >
                         {customerName || "Tên Khách Hàng"}
-                      </div>
-                      <div className="w-12 h-px bg-white/20 mt-4"></div>
-                      <div className="text-[0.4rem] text-white/20 uppercase tracking-widest mt-2">
-                        Toyota Vietnam
-                      </div>
-                    </div>
-                  </div>
+                      </h1>
+                    </main>
 
-                  {/* Overlay kính bóng */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none"></div>
+                    {/* Footer TV */}
+                    <footer className="p-12 flex justify-between items-end opacity-40">
+                      <div className="text-xl tracking-widest font-light">
+                        © {branches.find((b) => b.id === selectedBranch)?.name}
+                      </div>
+                      <div className="text-right border-r-4 border-red-600 pr-6">
+                        <div className="font-bold italic tracking-widest uppercase text-sm">
+                          Quality - Service - Care
+                        </div>
+                      </div>
+                    </footer>
+                  </div>
+                  {/* --- KẾT THÚC GIAO DIỆN TV MÔ PHỎNG --- */}
+
+                  {/* Lớp kính phản chiếu (Glassmorphism effect) */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
                 </div>
-                <div className="p-4 text-center">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">
-                    Live TV Preview Mode
-                  </span>
+
+                <div className="p-4 bg-slate-900/80 text-center border-t border-white/5">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">
+                      Live Showroom Preview Mode
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <h3 className="font-black text-xl uppercase mb-4 tracking-tighter">
-                    Mẹo nhỏ
-                  </h3>
-                  <ul className="text-xs space-y-3 opacity-90 font-medium">
-                    <li className="flex gap-2">
-                      <span>•</span>{" "}
-                      <span>
-                        Dùng <b>White Pearl</b> cho xe màu trắng để tạo sự tinh
-                        khiết.
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span>•</span>{" "}
-                      <span>
-                        <b>Bronze Mica</b> cực kỳ hợp với các dòng SUV như
-                        Fortuner hay Land Cruiser.
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span>•</span>{" "}
-                      <span>
-                        Chỉnh kích cỡ chữ khoảng <b>15vh</b> là đẹp nhất cho tên
-                        có 3-4 từ.
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-                <div className="absolute -right-4 -bottom-4 opacity-20 scale-150 rotate-12">
-                  <img
-                    src="/avt.jpg"
-                    className="w-32 brightness-0 invert"
-                    alt="bg"
+              {/* Panel gợi ý màu sắc nhanh */}
+              <div className="grid grid-cols-3 gap-2">
+                {["#F5C842", "#FFFFFF", "#FF4D4D"].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setTextColor(color)}
+                    className="h-1 bg-slate-800 rounded-full hover:bg-slate-700 transition-colors"
+                    style={{
+                      borderBottom:
+                        textColor === color ? `2px solid ${color}` : "none",
+                    }}
                   />
-                </div>
+                ))}
               </div>
             </div>
           </div>
