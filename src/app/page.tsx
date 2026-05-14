@@ -59,6 +59,7 @@ export default function LuxuryDisplay() {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [config, setConfig] = useState({
     name: "WELCOME",
@@ -66,6 +67,37 @@ export default function LuxuryDisplay() {
     fontSize: 15,
     textColor: "#F5C842",
   });
+
+  // Hàm kích hoạt Toàn màn hình
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(
+          `Error attempting to enable full-screen mode: ${err.message}`,
+        );
+      });
+      setIsFullscreen(true);
+    } else {
+      // Nếu muốn bấm lần nữa để thoát thì dùng dòng dưới, nếu không thì thôi
+      // document.exitFullscreen();
+      // setIsFullscreen(false);
+    }
+  }, []);
+
+  // Lắng nghe sự kiện phím hoặc click chuột để vào fullscreen
+  useEffect(() => {
+    const handleInteraction = () => {
+      if (!isFullscreen) toggleFullscreen();
+    };
+
+    window.addEventListener("click", handleInteraction);
+    window.addEventListener("keydown", handleInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleInteraction);
+      window.removeEventListener("keydown", handleInteraction);
+    };
+  }, [isFullscreen, toggleFullscreen]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -144,31 +176,16 @@ export default function LuxuryDisplay() {
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=Barlow:wght@100;300;400;700;900&display=swap");
 
-        /*
-         * RESPONSIVE SCALE SYSTEM
-         * Dùng clamp(min, preferred, max) cho mọi kích thước.
-         * preferred = vw/vh để scale theo màn hình.
-         * min/max để tránh quá nhỏ trên mobile hoặc quá to trên màn hình 4K.
-         */
         :root {
-          /* Logo container */
           --logo-size: clamp(60px, 6vw, 100px);
-          /* TOYOTA heading */
           --brand-size: clamp(28px, 3.5vw, 56px);
-          /* Branch label nhỏ dưới TOYOTA */
           --branch-size: clamp(10px, 1vw, 16px);
-          /* Đồng hồ giờ */
           --clock-size: clamp(48px, 7vw, 112px);
-          /* Ngày tháng nhỏ dưới đồng hồ */
           --date-size: clamp(10px, 1vw, 15px);
-          /* Badge "Lễ Bàn Giao Xe" */
           --badge-size: clamp(9px, 0.9vw, 13px);
-          /* "Trân trọng chúc mừng" */
           --subtitle-size: clamp(18px, 2.8vw, 44px);
-          /* Footer text */
           --footer-label-size: clamp(9px, 0.85vw, 13px);
           --footer-brand-size: clamp(13px, 1.4vw, 22px);
-          /* Spacing */
           --header-padding: clamp(16px, 3.5vw, 64px);
           --logo-gap: clamp(12px, 2vw, 40px);
           --logo-radius: clamp(10px, 1.5vw, 16px);
@@ -180,6 +197,7 @@ export default function LuxuryDisplay() {
           border-radius: 50%;
           opacity: 0.15;
           animation: float 20s infinite linear;
+          pointer-events: none;
         }
         @keyframes float {
           0% {
@@ -202,18 +220,48 @@ export default function LuxuryDisplay() {
             ? "inset 0 0 200px rgba(0, 0, 0, 0.8)"
             : "inset 0 0 200px rgba(0, 0, 0, 0.1)"};
         }
+
+        /* Ẩn con trỏ chuột sau vài giây để giao diện Cinematic hơn */
+        .cursor-none-auto {
+          cursor: none;
+        }
       `}</style>
 
       <div
-        className="fixed inset-0 flex flex-col transition-all duration-1000 overflow-hidden"
+        onClick={toggleFullscreen} // Bấm vào bất kỳ đâu cũng kích hoạt
+        className="fixed inset-0 flex flex-col transition-all duration-1000 overflow-hidden cursor-pointer"
         style={{
           background: activeTheme.bg,
           color: activeTheme.secondary,
           fontFamily: "'Barlow', sans-serif",
         }}
       >
+        {/* Hướng dẫn nhỏ chỉ hiện khi chưa fullscreen - mờ nhạt để không ảnh hưởng thẩm mỹ */}
+        {!isFullscreen && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 opacity-20 text-[10px] uppercase tracking-widest">
+            Click to enter Fullscreen mode
+          </div>
+        )}
+
         <div className="absolute inset-0 vignette pointer-events-none" />
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
+
+        {/* Các hạt trôi nổi */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="particle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: `${Math.random() * 6 + 2}px`,
+                height: `${Math.random() * 6 + 2}px`,
+                animationDelay: `${Math.random() * 15}s`,
+                animationDuration: `${15 + Math.random() * 10}s`,
+              }}
+            />
+          ))}
+        </div>
 
         {/* HEADER */}
         <header
@@ -268,7 +316,6 @@ export default function LuxuryDisplay() {
             </div>
           </div>
 
-          {/* Clock */}
           <div className="text-right flex-shrink-0">
             <div
               className="font-black tracking-tighter opacity-90 tabular-nums"
@@ -299,10 +346,7 @@ export default function LuxuryDisplay() {
           >
             <span
               className="font-black uppercase tracking-[1.5em]"
-              style={{
-                color: config.textColor,
-                fontSize: "var(--badge-size)",
-              }}
+              style={{ color: config.textColor, fontSize: "var(--badge-size)" }}
             >
               Lễ Bàn Giao Xe
             </span>
@@ -317,7 +361,6 @@ export default function LuxuryDisplay() {
             Trân trọng chúc mừng
           </motion.h3>
 
-          {/* Tên khách hàng — vẫn dùng fontSize từ config (vh) do admin tùy chỉnh */}
           <AnimatePresence mode="wait">
             <motion.div
               key={config.name}
