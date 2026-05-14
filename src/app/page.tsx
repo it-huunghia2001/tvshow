@@ -19,7 +19,6 @@ const branches = [
   { id: "TMP", name: "Toyota Mỹ Phước", label: "My Phuoc Showroom" },
 ];
 
-// secondary: màu chữ chính cho UI (Header, Footer) dựa trên nền
 const THEMES: Record<
   string,
   { bg: string; secondary: string; isDark: boolean }
@@ -144,6 +143,37 @@ export default function LuxuryDisplay() {
     <>
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=Barlow:wght@100;300;400;700;900&display=swap");
+
+        /*
+         * RESPONSIVE SCALE SYSTEM
+         * Dùng clamp(min, preferred, max) cho mọi kích thước.
+         * preferred = vw/vh để scale theo màn hình.
+         * min/max để tránh quá nhỏ trên mobile hoặc quá to trên màn hình 4K.
+         */
+        :root {
+          /* Logo container */
+          --logo-size: clamp(60px, 6vw, 100px);
+          /* TOYOTA heading */
+          --brand-size: clamp(28px, 3.5vw, 56px);
+          /* Branch label nhỏ dưới TOYOTA */
+          --branch-size: clamp(10px, 1vw, 16px);
+          /* Đồng hồ giờ */
+          --clock-size: clamp(48px, 7vw, 112px);
+          /* Ngày tháng nhỏ dưới đồng hồ */
+          --date-size: clamp(10px, 1vw, 15px);
+          /* Badge "Lễ Bàn Giao Xe" */
+          --badge-size: clamp(9px, 0.9vw, 13px);
+          /* "Trân trọng chúc mừng" */
+          --subtitle-size: clamp(18px, 2.8vw, 44px);
+          /* Footer text */
+          --footer-label-size: clamp(9px, 0.85vw, 13px);
+          --footer-brand-size: clamp(13px, 1.4vw, 22px);
+          /* Spacing */
+          --header-padding: clamp(16px, 3.5vw, 64px);
+          --logo-gap: clamp(12px, 2vw, 40px);
+          --logo-radius: clamp(10px, 1.5vw, 16px);
+        }
+
         .particle {
           position: absolute;
           background: ${config.textColor};
@@ -186,15 +216,24 @@ export default function LuxuryDisplay() {
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
 
         {/* HEADER */}
-        <header className="relative z-20 flex items-center justify-between p-16">
-          <div className="flex items-center gap-10">
+        <header
+          className="relative z-20 flex items-center justify-between"
+          style={{ padding: "var(--header-padding)" }}
+        >
+          <div className="flex items-center" style={{ gap: "var(--logo-gap)" }}>
             <motion.div
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="relative"
+              className="relative flex-shrink-0"
             >
               <div
-                className={`w-24 h-24 rounded-2xl p-5 shadow-2xl flex items-center justify-center ${activeTheme.isDark ? "bg-white" : "bg-gray-100"}`}
+                className={`flex items-center justify-center shadow-2xl ${activeTheme.isDark ? "bg-white" : "bg-gray-100"}`}
+                style={{
+                  width: "var(--logo-size)",
+                  height: "var(--logo-size)",
+                  borderRadius: "var(--logo-radius)",
+                  padding: "calc(var(--logo-size) * 0.2)",
+                }}
               >
                 <img
                   src="/avt.jpg"
@@ -203,33 +242,47 @@ export default function LuxuryDisplay() {
                 />
               </div>
               <div
-                className={`absolute -inset-2 border rounded-2xl animate-pulse ${activeTheme.isDark ? "border-white/10" : "border-black/5"}`}
+                className={`absolute -inset-2 border animate-pulse ${activeTheme.isDark ? "border-white/10" : "border-black/5"}`}
+                style={{ borderRadius: "var(--logo-radius)" }}
               />
             </motion.div>
 
-            <div className="space-y-1">
-              <h2 className="text-5xl font-black tracking-[0.3em] leading-none">
+            <div style={{ lineHeight: 1 }}>
+              <h2
+                className="font-black tracking-[0.3em]"
+                style={{ fontSize: "var(--brand-size)", marginBottom: "0.3em" }}
+              >
                 TOYOTA
               </h2>
               <div className="flex items-center gap-3 opacity-50">
                 <span
-                  className={`h-px w-8 ${activeTheme.isDark ? "bg-white" : "bg-black"}`}
+                  className={`h-px w-6 ${activeTheme.isDark ? "bg-white" : "bg-black"}`}
                 />
-                <p className="text-sm uppercase tracking-[0.6em] font-light">
+                <p
+                  className="uppercase tracking-[0.6em] font-light"
+                  style={{ fontSize: "var(--branch-size)" }}
+                >
                   {branch?.label}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="text-right">
-            <div className="text-8xl font-black tracking-tighter opacity-90 tabular-nums">
+          {/* Clock */}
+          <div className="text-right flex-shrink-0">
+            <div
+              className="font-black tracking-tighter opacity-90 tabular-nums"
+              style={{ fontSize: "var(--clock-size)", lineHeight: 1 }}
+            >
               {currentTime.toLocaleTimeString("vi-VN", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
             </div>
-            <div className="text-sm uppercase tracking-[0.4em] opacity-40 mt-2 font-medium">
+            <div
+              className="uppercase tracking-[0.4em] opacity-40 font-medium"
+              style={{ fontSize: "var(--date-size)", marginTop: "0.4em" }}
+            >
               {new Intl.DateTimeFormat("vi-VN", { dateStyle: "full" }).format(
                 currentTime,
               )}
@@ -245,8 +298,11 @@ export default function LuxuryDisplay() {
             className={`mb-12 px-10 py-3 rounded-full border backdrop-blur-md shadow-2xl ${activeTheme.isDark ? "border-white/10 bg-black/20" : "border-black/10 bg-white/40"}`}
           >
             <span
-              className="text-xs tracking-[1.5em] uppercase font-black"
-              style={{ color: config.textColor }}
+              className="font-black uppercase tracking-[1.5em]"
+              style={{
+                color: config.textColor,
+                fontSize: "var(--badge-size)",
+              }}
             >
               Lễ Bàn Giao Xe
             </span>
@@ -255,11 +311,13 @@ export default function LuxuryDisplay() {
           <motion.h3
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
-            className="text-4xl font-thin uppercase tracking-[0.8em] mb-12"
+            className="font-thin uppercase tracking-[0.8em] mb-12"
+            style={{ fontSize: "var(--subtitle-size)" }}
           >
             Trân trọng chúc mừng
           </motion.h3>
 
+          {/* Tên khách hàng — vẫn dùng fontSize từ config (vh) do admin tùy chỉnh */}
           <AnimatePresence mode="wait">
             <motion.div
               key={config.name}
@@ -284,41 +342,44 @@ export default function LuxuryDisplay() {
               </h1>
             </motion.div>
           </AnimatePresence>
-
-          <div className="mt-24 flex items-center gap-10 opacity-20">
-            <div
-              className={`h-px w-48 bg-gradient-to-r from-transparent via-${activeTheme.isDark ? "white" : "black"} to-transparent`}
-            />
-            <img
-              src="/avt.jpg"
-              className={`w-8 h-8 object-contain ${activeTheme.isDark ? "grayscale invert" : "grayscale"}`}
-              alt="sub-logo"
-            />
-            <div
-              className={`h-px w-48 bg-gradient-to-r from-transparent via-${activeTheme.isDark ? "white" : "black"} to-transparent`}
-            />
-          </div>
         </main>
 
         {/* FOOTER */}
-        <footer className="p-16 flex justify-between items-end">
-          <div className="space-y-2">
+        <footer
+          className="flex justify-between items-end"
+          style={{ padding: "var(--header-padding)" }}
+        >
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5em" }}
+          >
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-              <span className="opacity-30 text-[10px] tracking-[0.3em] uppercase font-bold">
+              <span
+                className="opacity-30 font-bold uppercase tracking-[0.3em]"
+                style={{ fontSize: "var(--footer-label-size)" }}
+              >
                 Official Delivery System
               </span>
             </div>
-            <p className="opacity-40 text-lg tracking-[0.2em] font-light">
+            <p
+              className="opacity-40 tracking-[0.2em] font-light"
+              style={{ fontSize: "var(--footer-brand-size)" }}
+            >
               © {branch?.name}
             </p>
           </div>
 
           <div className="flex flex-col items-end gap-1 border-r-2 border-red-600 pr-6">
-            <span className="opacity-60 text-xs tracking-[0.5em] uppercase font-black italic">
+            <span
+              className="opacity-60 font-black italic uppercase tracking-[0.5em]"
+              style={{ fontSize: "var(--footer-label-size)" }}
+            >
               Quality - Service - Care
             </span>
-            <span className="opacity-30 text-[10px] tracking-[0.2em] uppercase">
+            <span
+              className="opacity-30 uppercase tracking-[0.2em]"
+              style={{ fontSize: "calc(var(--footer-label-size) * 0.85)" }}
+            >
               The Ultimate Driving Experience
             </span>
           </div>
